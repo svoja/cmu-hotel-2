@@ -43,7 +43,7 @@ if ($hotel_id > 0) {
 
 <main>
     <?php if (!empty($hotel)): ?>
-        <div class="card shadow-sm mt-3">
+        <div class="card shadow-sm mb-4">
             <!-- Hotel Image Section -->
             <?php include '../partials/hotel-images.php'; ?>
 
@@ -76,5 +76,21 @@ if ($hotel_id > 0) {
     <?php else: ?>
         <div class="alert alert-danger">Hotel details not found.</div>
     <?php endif; ?>
+
+    <?php include '../partials/room-query.php'; ?>
+
+    <?php if (!empty($rooms)) : ?>
+        <div class="mt-3">
+            <h5 class="fw-bold">Available Rooms</h5>
+            <div class="row row-cols-1 g-4">
+                <?php foreach ($rooms as $room) : ?>
+                    <?php include '../partials/room-card.php'; ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    <?php else : ?>
+        <div class="alert alert-danger mt-3">No rooms available for this hotel.</div>
+    <?php endif; ?>
+</main>
 
 <?php require_once("../partials/footer.php"); ?>
