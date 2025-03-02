@@ -154,13 +154,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <!-- Room Type Selection (only in edit mode) -->
                         <form method="GET" class="mb-4">
                             <label class="form-label fw-bold">Select Room Type</label>
-                            <select name="room_type_id" class="form-select" onchange="this.form.submit()">
-                                <?php foreach ($roomTypesList as $rt) : ?>
-                                    <option value="<?= $rt['id']; ?>" <?= ($room_type_id == $rt['id']) ? 'selected' : ''; ?>>
-                                        <?= htmlspecialchars($rt['name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                            <div class="input-group">
+                                <select name="room_type_id" class="form-select" onchange="this.form.submit()">
+                                    <?php foreach ($roomTypesList as $rt) : ?>
+                                        <option value="<?= $rt['id']; ?>" <?= ($room_type_id == $rt['id']) ? 'selected' : ''; ?>>
+                                            <?= htmlspecialchars($rt['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="button" class="btn btn-danger delete-room-type" data-room-type-id="<?= $room_type_id; ?>">
+                                    Delete
+                                </button>
+                            </div>
                             <input type="hidden" name="hotel_id" value="<?= $hotel_id; ?>">
                             <input type="hidden" name="mode" value="edit">
                         </form>
@@ -196,6 +201,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 </button>
                             </div>
                         <?php endif; ?>
+
+                        <?php if ($mode == 'edit') : ?>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Room Type Discounts</label>
+                                <button type="button" class="btn btn-warning edit-room-discount"
+                                    data-room-type-id="<?= $room_type_id; ?>"
+                                    data-bs-toggle="modal" data-bs-target="#roomDiscountModal">
+                                    Manage Discount
+                                </button>
+                            </div>
+                        <?php endif; ?>
+                                                
 
                         <button type="submit" class="btn btn-primary w-100">
                             <?= $mode == 'add' ? 'Create Room Type' : 'Update Room Type'; ?>
@@ -273,7 +290,142 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
 <?php endif; ?>
 
+<!-- Room Discount Modal -->
+<div class="modal fade" id="roomDiscountModal" tabindex="-1" aria-labelledby="roomDiscountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Manage Room Discount</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="roomDiscountForm">
+                    <input type="hidden" name="room_type_id" id="discountRoomTypeId">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Original Price ($)</label>
+                        <input type="text" id="originalPrice" class="form-control" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Discount Percentage (%)</label>
+                        <input type="number" name="discount_percentage" id="discountPercentage" class="form-control" min="0" max="100" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Discounted Price ($)</label>
+                        <input type="text" id="discountedPrice" class="form-control" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Discount Status</label>
+                        <select name="discount_status" id="discountStatus" class="form-select">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Discount</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+document.querySelectorAll(".delete-room-type").forEach(button => {
+    button.addEventListener("click", function () {
+        let roomTypeId = this.getAttribute("data-room-type-id");
+
+        if (!roomTypeId || confirm("Are you sure you want to delete this room type? This action cannot be undone!")) {
+            let formData = new FormData();
+            formData.append("room_type_id", roomTypeId);
+
+            fetch("../hotel/delete-room-type.php", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Room type deleted successfully!");
+                    location.reload();
+                } else {
+                    alert("Failed to delete room type: " + data.error);
+                }
+            })
+            .catch(error => console.error("Error deleting room type:", error));
+        }
+    });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".edit-room-discount").forEach(button => {
+        button.addEventListener("click", function () {
+            let roomTypeId = this.getAttribute("data-room-type-id");
+            document.getElementById("discountRoomTypeId").value = roomTypeId;
+
+            // Fetch existing discount and base price
+            fetch("../hotel/get-room-discount.php?room_type_id=" + roomTypeId)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Discount Data:", data);
+
+                    if (data.success) {
+                        document.getElementById("originalPrice").value = data.base_price.toFixed(2);
+                        document.getElementById("discountPercentage").value = data.discount_percentage;
+                        document.getElementById("discountedPrice").value = data.discounted_price.toFixed(2);
+                        document.getElementById("discountStatus").value = data.status;
+                    }
+                })
+                .catch(error => console.error("Error loading room discount:", error));
+        });
+    });
+
+    // Update discounted price dynamically when the discount input changes
+    document.getElementById("discountPercentage").addEventListener("input", function () {
+        let basePrice = parseFloat(document.getElementById("originalPrice").value);
+        let discountPercentage = parseFloat(this.value);
+
+        if (isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100) {
+            document.getElementById("discountedPrice").value = basePrice.toFixed(2);
+        } else {
+            let discountedPrice = basePrice - (basePrice * (discountPercentage / 100));
+            document.getElementById("discountedPrice").value = discountedPrice.toFixed(2);
+        }
+    });
+
+    document.getElementById("roomDiscountForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        let formData = new FormData(this);
+        console.log("Form Data Sent:", [...formData.entries()]);
+
+        fetch("../hotel/update-room-discount.php", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Server Response:", data);
+
+            if (data.success) {
+                alert("Discount updated successfully!");
+                location.reload();
+            } else {
+                alert("Failed to update discount. Error: " + data.error);
+            }
+        })
+        .catch(error => {
+            console.error("Fetch Error:", error);
+            alert("Failed to connect to the server.");
+        });
+    });
+});
+
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".edit-room-amenities").forEach(button => {
         button.addEventListener("click", function () {

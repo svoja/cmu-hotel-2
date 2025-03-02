@@ -31,8 +31,8 @@ try {
             (SELECT MIN(rt.base_price - (rt.base_price * (d.discount_percentage / 100))) 
              FROM room_types rt 
              INNER JOIN rooms r ON rt.id = r.room_type_id 
-             LEFT JOIN discounts d ON d.hotel_id = h.id AND d.room_type_id = rt.id AND d.status = 'active'
-             WHERE r.hotel_id = h.id AND r.status = 'available'),
+             LEFT JOIN discounts d ON d.hotel_id = h.id AND d.room_type_id = rt.id 
+             WHERE r.hotel_id = h.id AND r.status = 'available' AND d.status = 'active' AND d.discount_percentage > 0),
             (SELECT MIN(rt.base_price) 
              FROM room_types rt 
              INNER JOIN rooms r ON rt.id = r.room_type_id 
