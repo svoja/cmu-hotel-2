@@ -13,7 +13,8 @@
                 <li class="nav-item"><a class="nav-link text-primary" href="../admin/add-hotel.php">Add Hotel</a></li>
             <?php elseif ($_SESSION['user_role'] === 'hotel_owner') : ?>
                 <li class="nav-item"><a class="nav-link text-primary" href="../hotel/manage-hotel.php">Manage Hotel</a></li>
-                <li class="nav-item"><a class="nav-link text-primary" href="../hotel/add-room.php">Add Room</a></li>
+                <li class="nav-item"><a class="nav-link text-primary" href="../hotel/manage-rooms.php">Manage Rooms</a></li>
+                <li class="nav-item"><a class="nav-link text-primary" href="../hotel/manage-room-types.php">Manage Room Types</a></li>
                 <li class="nav-item"><a class="nav-link text-primary" href="../hotel/manage-bookings.php">Manage Bookings</a></li>
             <?php endif; ?>
 

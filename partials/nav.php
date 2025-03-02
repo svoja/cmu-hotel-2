@@ -37,9 +37,9 @@ if (session_status() === PHP_SESSION_NONE) {
                             <li><a class="dropdown-item" href="/views/my-bookings.php">My Bookings</a></li>
 
                             <?php if ($_SESSION['user_role'] === 'hotel_owner') : ?>
-                                <li><a class="dropdown-item" href="/views/manage-hotel.php">Manage Hotel</a></li>
+                                <li><a class="dropdown-item" href="/hotel/manage-hotel.php">Manage Hotel</a></li>
                             <?php elseif ($_SESSION['user_role'] === 'admin') : ?>
-                                <li><a class="dropdown-item" href="/views/admin-dashboard.php">Admin Dashboard</a></li>
+                                <li><a class="dropdown-item" href="/admin/dashboard.php">Admin Dashboard</a></li>
                             <?php endif; ?>
 
                             <li><hr class="dropdown-divider"></li>

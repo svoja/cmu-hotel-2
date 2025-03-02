@@ -80,7 +80,7 @@ try {
                     <span class="text-muted fst-italic">No reviews yet</span>
                 <?php endif; ?>
             </p>
-            <a href="hotel_details.php?hotel_id=<?php echo htmlspecialchars($hotel['id']); ?>" class="stretched-link"></a>
+            <a href="hotel-details.php?hotel_id=<?php echo htmlspecialchars($hotel['id']); ?>" class="stretched-link"></a>
         </div>
 
         <div class="position-absolute bottom-0 end-0 m-2 fs-5">
