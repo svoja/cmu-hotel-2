@@ -22,7 +22,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $check_in = $_POST['check_in'] ?? '';
     $check_out = $_POST['check_out'] ?? '';
     $payment_method = $_POST['payment_method'] ?? '';
-    
+
     if (!$hotel_id || !$room_types_id || empty($check_in) || empty($check_out) || empty($payment_method)) {
         $_SESSION['error'] = "Invalid booking details.";
         header("Location: ../booking.php?room_types_id=$room_types_id&hotel_id=$hotel_id");
@@ -45,11 +45,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             throw new Exception("Room type not found.");
         }
 
-        $final_price = $room['final_price'];
-        
+        // Calculate number of nights
+        $check_in_date = new DateTime($check_in);
+        $check_out_date = new DateTime($check_out);
+        $nights = $check_in_date->diff($check_out_date)->days;
+
+        if ($nights <= 0) {
+            throw new Exception("Invalid check-in/check-out dates.");
+        }
+
+        // Calculate total price
+        $total_price = $nights * $room['final_price'];
+
         // Insert reservation
         $stmt = $pdo->prepare("INSERT INTO reservations (user_id, hotel_id, check_in, check_out, total_price) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$user_id, $hotel_id, $check_in, $check_out, $final_price]);
+        $stmt->execute([$user_id, $hotel_id, $check_in, $check_out, $total_price]);
         $reservation_id = $pdo->lastInsertId();
 
         // Assign an available room
@@ -63,7 +73,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         // Reserve the room
         $stmt = $pdo->prepare("INSERT INTO reservation_rooms (reservation_id, room_id, price) VALUES (?, ?, ?)");
-        $stmt->execute([$reservation_id, $room_id, $final_price]);
+        $stmt->execute([$reservation_id, $room_id, $total_price]);
 
         // Mark the room as occupied
         $stmt = $pdo->prepare("UPDATE rooms SET status = 'occupied' WHERE id = ?");
@@ -72,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         // Insert payment
         $payment_status = ($payment_method == 'cash') ? 'pending' : 'completed';
         $stmt = $pdo->prepare("INSERT INTO payments (reservation_id, amount, payment_method, status) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$reservation_id, $final_price, $payment_method, $payment_status]);
+        $stmt->execute([$reservation_id, $total_price, $payment_method, $payment_status]);
 
         $pdo->commit();
         $_SESSION['success'] = "Booking confirmed successfully!";

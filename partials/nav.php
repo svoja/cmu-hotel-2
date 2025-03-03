@@ -19,9 +19,9 @@ if (session_status() === PHP_SESSION_NONE) {
                 <li class="nav-item">
                     <a class="nav-link" href="/views/destinations.php">Destinations</a>
                 </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a class="nav-link" href="/views/deals.php">Deals</a>
-                </li>
+                </li> -->
                 <li class="nav-item">
                     <a class="nav-link" href="/views/support.php">Support</a>
                 </li>

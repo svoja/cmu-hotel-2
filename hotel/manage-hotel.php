@@ -54,7 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $state = trim($_POST['state']);
     $country = trim($_POST['country']);
     $zip_code = trim($_POST['zip_code']);
-    $status = isset($_POST['status']) ? 'active' : 'inactive';
+    $status = (!empty($_POST['status']) && $_POST['status'] === 'active') ? 'active' : 'inactive';
 
     // Optional Fields: Set NULL if empty
     $map_url = !empty($_POST['map_url']) ? trim($_POST['map_url']) : null;
@@ -164,12 +164,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             </button>
                         </div>
                         <div class="form-check form-switch">
-                            <input type="hidden" name="status" value="inactive">
-                            <input class="form-check-input" type="checkbox" name="status" id="statusSwitch" value="active" 
+                            <input class="form-check-input" type="checkbox" name="status" id="statusSwitch" value="active"
                                 <?= ($hotel['status'] === 'active') ? 'checked' : ''; ?>>
                             <label class="form-check-label" for="statusSwitch">Hotel is Active</label>
                         </div>
-                        
 
                         <button type="submit" class="btn btn-primary w-100">Update Hotel</button>
                     </form>

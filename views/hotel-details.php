@@ -37,10 +37,31 @@ if ($hotel_id > 0) {
     ");
     $stmt->execute([$hotel_id]);
     $good_reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Fetch all reviews for this hotel
+    $stmt = $pdo->prepare("
+    SELECT u.name AS reviewer_name, r.review_text, r.rating, r.created_at 
+    FROM reviews r 
+    INNER JOIN users u ON r.user_id = u.id 
+    WHERE r.hotel_id = ? 
+    ORDER BY r.created_at DESC
+    ");
+    $stmt->execute([$hotel_id]);
+    $all_reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 ?>
+<style>
+.rating label {
+    cursor: pointer;
+    margin-right: 5px;
+    transition: transform 0.2s ease-in-out;
+}
 
+.rating label:hover {
+    transform: scale(1.2);
+}
+</style>
 <main>
     <?php if (!empty($hotel)): ?>
         <div class="card shadow-sm mb-4">
@@ -79,6 +100,7 @@ if ($hotel_id > 0) {
 
     <?php include '../partials/room-query.php'; ?>
 
+    <!-- Available Rooms Section -->
     <?php if (!empty($rooms)) : ?>
         <div class="mt-3">
             <h5 class="fw-bold">Available Rooms</h5>
@@ -91,6 +113,87 @@ if ($hotel_id > 0) {
     <?php else : ?>
         <div class="alert alert-danger mt-3">No rooms available for this hotel.</div>
     <?php endif; ?>
+
+<!-- Review Section -->
+<div class="mt-5">
+    <div class="card shadow-sm bg-white">
+        <div class="card-body">
+            <h5 class="fw-bold text-dark">Customer Reviews</h5>
+
+            <!-- Average Rating -->
+            <div class="mb-3">
+                <div class="d-flex align-items-center">
+                    <?php 
+                    $avg_rating = round($review_stats['avg_rating'], 1);
+                    $rating_text = ($avg_rating >= 4.5) ? "Exceptional" :
+                                (($avg_rating >= 4.0) ? "Great" :
+                                (($avg_rating >= 3.0) ? "Good" : "Average"));
+                    ?>
+                    <div class="bg-light text-dark px-3 py-2 rounded-3 fw-bold border">
+                        <?= number_format($avg_rating, 1) ?> / 5.0 <span class="text-muted">- <?= $rating_text ?></span>
+                    </div>
+                    <span class="ms-3 fs-6 text-muted">(<?= $review_stats['total_reviews']; ?> reviews)</span>
+                </div>
+            </div>
+
+            <!-- Display Existing Reviews -->
+            <div class="reviews-container">
+                <?php if ($review_stats['total_reviews'] > 0): ?>
+                    <?php if (!empty($all_reviews)): ?>
+                        <?php foreach ($all_reviews as $review): ?>
+                            <div class="review-card bg-light border rounded-3 p-3 mb-3">
+                                <strong class="text-dark"><?= htmlspecialchars($review['reviewer_name']) ?></strong> 
+                                <span class="text-muted">- <?= number_format($review['rating'], 1) ?> / 5.0</span>
+                                <br>
+                                <small class="text-muted fst-italic">
+                                    <?= date("F j, Y", strtotime($review['created_at'])) ?> <!-- ✅ Proper Date Formatting -->
+                                </small>
+                                <br>
+                                <p class="text-dark m-0">
+                                    "<?= htmlspecialchars($review['review_text']) ?>"
+                                </p>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="text-muted">No reviews available.</p>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <p class="text-muted">No reviews yet.</p>
+                <?php endif; ?>
+            </div>
+
+            <!-- Review Form -->
+            <?php if (isset($_SESSION['user_id'])) : ?>
+                <div class="card bg-white border shadow-sm mt-4 rounded-3">
+                    <div class="card-body">
+                        <h5 class="fw-bold text-dark">Leave a Review</h5>
+                        <form action="../hotel/submit-review.php" method="POST">
+                            <input type="hidden" name="hotel_id" value="<?= $hotel_id; ?>">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark">Your Rating (1-5)</label>
+                                <select name="rating" class="form-select bg-light text-dark border">
+                                    <option value="5">5 - Excellent</option>
+                                    <option value="4">4 - Great</option>
+                                    <option value="3">3 - Good</option>
+                                    <option value="2">2 - Fair</option>
+                                    <option value="1">1 - Poor</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark">Your Review</label>
+                                <textarea name="review_text" class="form-control bg-light text-dark border rounded-3" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-dark w-100">Submit Review</button>
+                        </form>
+                    </div>
+                </div>
+            <?php else : ?>
+                <p class="text-muted">You must be logged in to leave a review.</p>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
 </main>
 
 <?php require_once("../partials/footer.php"); ?>
